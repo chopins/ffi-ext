@@ -1,5 +1,7 @@
 <?php
 
+use Toknot\PhpApi;
+use Toknot\ReflectionCFunction;
 include_once __DIR__ . '/../src/PhpApi.php';
 include_once __DIR__ . '/../src/ReflectionCFunction.php';
 

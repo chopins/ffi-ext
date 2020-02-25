@@ -8,6 +8,12 @@
  * @link       https://github.com/chopins/php-gtk
  * @version    0.1
  */
+
+namespace Toknot;
+
+use ReflectionException;
+use FFI;
+
 class ReflectionCFunction extends PhpApi
 {
 

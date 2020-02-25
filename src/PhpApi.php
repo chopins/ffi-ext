@@ -8,6 +8,13 @@
  * @link       https://github.com/chopins/php-gtk
  * @version    0.1
  */
+
+namespace Toknot;
+
+use FFI;
+use FFI\CData;
+use FFI\CType;
+
 class PhpApi
 {
 
@@ -102,12 +109,8 @@ class PhpApi
     {
         if($arg instanceof FFI\CData) {
             $typeStruct = \FFI::typeof($arg);
-            ob_start();
-            var_dump($typeStruct);
-            $type = ob_get_clean();
-            strtok($type, ':');
-            $typeString = strtok(')#');
-            $arg = $ffi->cast($typeString, $arg);
+            $type = $this->getCTypeName($typeStruct);
+            $arg = $ffi->cast($type, $arg);
         }
     }
 
