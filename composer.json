@@ -1,0 +1,33 @@
+{
+    "name": "toknot/php-capi",
+    "description": "call PHP C API.",
+    "keywords": [
+        "php",
+        "ffi",
+        "C"
+    ],
+    "homepage": "http://toknot.com",
+    "license": "BSD-3-Clause",
+    "version": "0.1",
+    "authors": [
+        {
+            "name": "Szopen Xiao",
+            "email": "xiao@toknot.com",
+            "homepage": "http://toknot.com",
+            "role": "Founder"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/chopins/php-capi/issues?state=open",
+        "source": "https://github.com/chopins/php-capi"
+    },
+    "require": {
+        "php": ">=7.4.0",
+        "ext-ffi": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "\\": "src/"
+        }
+    }
+}
