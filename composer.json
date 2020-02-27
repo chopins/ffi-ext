@@ -1,5 +1,5 @@
 {
-    "name": "toknot/ffi-ext",
+    "name": "toknot/ffi-extend",
     "description": "call PHP C API.",
     "keywords": [
         "php",
