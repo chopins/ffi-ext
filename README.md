@@ -3,7 +3,7 @@ Call PHP C API
 
 # Reference
 
-* class `Toknot\PhpApi` of method
+### class `Toknot\PhpApi` of methods
  1. `__construct()`
  2. `phpffi() : ffi` : get ffi
  3. `castSameType(FFI $ffi, &$arg)`   cast to same type
@@ -28,7 +28,7 @@ Call PHP C API
  22. `argsPtr(int $argc, array $argv): CData`  php `$argv` array to C `char**`
  23. `strToCharPtr(string $string): CData`    php string to C `char*`
  24. `strToCharArr(string $string): CData`  php string to C 'char[]`
-* class `Toknot\ReflectionCFunction` of method
+### class `Toknot\ReflectionCFunction` of methods
  1. `__construct(FFI $ffi, string $name)` Reflection FFI `$ffi` of C function `$name`
  2. `getName()` get function name
  3. `getClosure() : Closure`
