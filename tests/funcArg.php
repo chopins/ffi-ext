@@ -30,7 +30,7 @@ var_dump('==== has gettimeofday():', $r);
 
 $rf = new ReflectionCFunction($ffi, 'gettimeofday');
 
-$n = $rf->cfuncNumArgs();
+$n = $rf->getNumberOfParameters();
 var_dump('==== gettimeofday() num args:', $n);
 
 var_dump('==== gettimeofday() is variadic:', $rf->isVariadic());
@@ -40,6 +40,6 @@ var_dump('==== gettimeofday() return type:',$type);
 
 var_dump($rf->getParameters());
 
-$te = $ffi->type('te*');
+$te = $ffi->type('te***');
 
 var_dump('==== te type:', $c->getCTypeName($te));

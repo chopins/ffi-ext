@@ -235,10 +235,13 @@ class PhpApi
                         $buf = '<anonymous>' . $buf;
                     }
                     $name = 'enum ';
+                    break;
                 case $this->ZEND_FFI_TYPE_KIND('BOOL'):
                     $name = 'bool';
+                    break;
                 case $this->ZEND_FFI_TYPE_KIND('CHAR'):
                     $name = 'char';
+                    break;
                 case $this->ZEND_FFI_TYPE_KIND('POINTER'):
                     $buf = '*' . $buf;
                     $is_ptr = 1;
@@ -376,6 +379,53 @@ class PhpApi
                 $callable($p->h, $v);
             }
         }
+    }
+    
+    /**
+     * PHP array to C Data of char*[] type, PHP array to char**
+     *
+     * @param integer $argc   number of elements in given array
+     * @param array $argv   given array
+     * @return CData
+     */
+    public function argsPtr(int $argc, array $argv): CData
+    {
+        $p = self::$phpapi->new("char *[$argc]", false);
+        foreach($argv as $i => $arg) {
+            $p[$i] = $this->strToCharPtr($arg);
+        }
+        $a = FFI::addr($p);
+        return FFI::cast('char**', $a);
+    }
+    
+     /**
+     * PHP string to C char* type
+     *
+     * @param string $string
+     * @return CData
+     */
+    public function strToCharPtr(string $string): CData
+    {
+        $charArr = $this->strToCharArr($string);
+        return FFI::cast('char*', FFI::addr($charArr));
+    }
+
+    /**
+     * PHP string to  C Data of char[] type, php string to C char[]
+     *
+     * @param string $string
+     * @return CData
+     */
+    public function strToCharArr(string $string): CData
+    {
+        $len = strlen($string);
+        $charArr = self::$phpapi->new("char[$len]", false);
+        for($i = 0; $i < $len; $i++) {
+            $char = self::$phpapi->new('char', false);
+            $char->cdata = $string[$i];
+            $charArr[$i] = $char;
+        }
+        return $charArr;
     }
 
 }

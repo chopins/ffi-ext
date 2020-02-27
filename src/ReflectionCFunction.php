@@ -13,8 +13,9 @@ namespace Toknot;
 
 use ReflectionException;
 use FFI;
+use Reflector;
 
-class ReflectionCFunction extends PhpApi
+class ReflectionCFunction extends PhpApi implements Reflector
 {
 
     private $name = '';
@@ -40,12 +41,69 @@ class ReflectionCFunction extends PhpApi
         throw new ReflectionException("C function $name does not exists");
     }
 
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    public static function export()
+    {
+        return $this->name;
+    }
+
+    public function getClosure()
+    {
+        $num = $this->getNumberOfParameters();
+        switch($num) {
+            case 0:
+                return \Closure::fromCallable([$this->ffi, $this->name]);
+            case 1:
+                return function($a) {
+                    $this->ffi->{$this->name}($a);
+                };
+            case 2:
+                return function($a, $b) {
+                    $this->ffi->{$this->name}($a, $b);
+                };
+            case 3:
+                return function($a, $b, $c) {
+                    $this->ffi->{$this->name}($a, $b, $c);
+                };
+            case 4:
+                return function($a, $b, $c, $d) {
+                    $this->ffi->{$this->name}($a, $b, $c, $d);
+                };
+            case 5:
+                return function($a, $b, $c, $d, $e) {
+                    $this->ffi->{$this->name}($a, $b, $c, $d, $e);
+                };
+            case 6:
+                return function($a, $b, $c, $d, $e, $f) {
+                    $this->ffi->{$this->name}($a, $b, $c, $d, $e, $f);
+                };
+            default:
+                $p = array_fill(0, $num, '$a');
+                foreach($p as $i => &$v) {
+                    $v = $v . $i;
+                }
+                $args = implode(',', $p);
+                $c = null;
+                eval("\$c = function($args){$this->ffi->{$this->name}($args)};");
+                return $c;
+        }
+    }
+
+    public function __toString()
+    {
+        return "C Function {$this->name}";
+    }
+
     public function isVariadic()
     {
         return (bool) ($this->type->attr & self::ZEND_FFI_ATTR_VARIADIC);
     }
 
-    public function cfuncNumArgs()
+    public function getNumberOfParameters()
     {
         return $this->type->func->args[0]->nNumOfElements;
     }
