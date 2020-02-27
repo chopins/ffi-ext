@@ -330,7 +330,7 @@ class PhpApi
         $zendObj = $this->phpVar($ffi);
         $zendStr = $this->phpVar($name);
         $zffi = self::$phpapi->cast('zend_ffi*', $zendObj);
-        if(FFI::isNull($zffi->symbols)) {
+        if($this->isNull($zffi->symbols)) {
             return false;
         }
         $sym = $this->zend_hash_find_ptr($zffi->symbols, $zendStr, 'zend_ffi_symbol*');

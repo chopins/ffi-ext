@@ -29,7 +29,7 @@ class ReflectionCFunction extends PhpApi implements Reflector
         $zendObj = $this->phpVar($ffi);
         $zendStr = $this->phpVar($name);
         $zffi = $this->phpffi()->cast('zend_ffi*', $zendObj);
-        if(FFI::isNull($zffi->symbols)) {
+        if($this->isNull($zffi->symbols)) {
             throw new ReflectionException("C function $name does not exists");
         }
 
