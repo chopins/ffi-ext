@@ -304,7 +304,7 @@ class PhpApi
         return "$name{$buf}";
     }
 
-    public function isNull($v)
+    public function isNull(?CData $v)
     {
         return $v === null || FFI::isNull($v);
     }

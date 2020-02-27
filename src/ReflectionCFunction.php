@@ -34,7 +34,7 @@ class ReflectionCFunction extends PhpApi implements Reflector
         }
 
         $sym = $this->zend_hash_find_ptr($zffi->symbols, $zendStr, 'zend_ffi_symbol*');
-        if(!FFI::isNull($sym) && $sym[0]->kind == self::ZEND_FFI_SYM_FUNC) {
+        if(!$this->isNull($sym) && $sym[0]->kind == self::ZEND_FFI_SYM_FUNC) {
             $this->type = $this->ZEND_FFI_TYPE($sym[0]->type)[0];
             return;
         }
