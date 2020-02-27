@@ -18,7 +18,7 @@ Call PHP C API
    12. `isNull($v) : bool`  check `$v` whether is `NULL` or C `NULL`
    13. `zend_hash_find_ptr(CData $zendArrayPtr, CData $name, string $type): CData` find a value from php C hash array, and cast to `$type`
    14. `zend_hash_num_elements(CData $array) : int` get number of php C HashTable
-   15. `hasCFunc(FFI $ffi, string $name) : bool`  check given function name whether in given FFI
+   15. `hasCFunc(FFI $ffi, string $name) : bool`  check given function `$name` whether in given FFI `$ffi`
    16. `Z_PTR_P(CData $zval) : CData` php C `Z_PTR_P` macro, `$zval` must be pointer
    17. `ZEND_FFI_TYPE(CData $t) : CData`  php FFI of `ZEND_FFI_TYPE` macro
    18. `castAllSameType(FFI $ffi, array &$args)`   cast array of args to same type
@@ -27,7 +27,7 @@ Call PHP C API
    21. `strToCharPtr(string $string): CData`    php string to C `char*`
    22. `strToCharArr(string $string): CData`  php string to C 'char[]`
 * class `Toknot\ReflectionCFunction` of method
-   1. `__construct(FFI $ffi, string $name)` check FFI `$ffi` whether has C function `$name`
+   1. `__construct(FFI $ffi, string $name)` Reflection FFI `$ffi` of C function `$name`
    2. `getName()` get function name
    3. `getClosure() : Closure`
    4. `isVariadic() : bool`
