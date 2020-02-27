@@ -15,7 +15,7 @@ use ReflectionException;
 use FFI;
 use Reflector;
 
-class ReflectionCFunction extends PhpApi implements Reflector
+class ReflectionCFunction extends FFIExtend implements Reflector
 {
 
     private $name = '';
@@ -125,10 +125,10 @@ class ReflectionCFunction extends PhpApi implements Reflector
      */
     public function getParameters(): array
     {
-        $array = $this->phpffi()->zend_array_dup($this->type->func->args);
+        $array = $this->getffi()->zend_array_dup($this->type->func->args);
         $parameters = [];
         $this->iteratorZendArray($array, function($k, $v) use(&$parameters) {
-            $type = $this->phpffi()->cast('zend_ffi_type*', $v);
+            $type = $this->getffi()->cast('zend_ffi_type*', $v);
             $type = $this->ZEND_FFI_TYPE($type);
             $name = $this->getCTypeCDataName($type);
             $parameters[$k] = $name;

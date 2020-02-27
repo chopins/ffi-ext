@@ -1,10 +1,12 @@
 {
-    "name": "toknot/php-capi",
+    "name": "toknot/ffi-ext",
     "description": "call PHP C API.",
     "keywords": [
         "php",
         "ffi",
-        "C"
+        "C",
+        "extend",
+        "ext"
     ],
     "homepage": "http://toknot.com",
     "license": "BSD-3-Clause",
@@ -18,8 +20,8 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/chopins/php-capi/issues?state=open",
-        "source": "https://github.com/chopins/php-capi"
+        "issues": "https://github.com/chopins/ffi-ext/issues?state=open",
+        "source": "https://github.com/chopins/ffi-ext"
     },
     "require": {
         "php": ">=7.4.0",

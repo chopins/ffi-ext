@@ -16,7 +16,7 @@ use FFI\CData;
 use FFI\CType;
 use TypeError;
 
-class PhpApi
+class FFIExtend
 {
 
     private static $phpapi = null;
@@ -60,7 +60,7 @@ class PhpApi
         }
     }
 
-    public function phpffi()
+    public function getffi()
     {
         return self::$phpapi;
     }

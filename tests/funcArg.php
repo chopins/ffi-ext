@@ -1,8 +1,8 @@
 <?php
 
-use Toknot\PhpApi;
+use Toknot\FFIExtend;
 use Toknot\ReflectionCFunction;
-include_once __DIR__ . '/../src/PhpApi.php';
+include_once __DIR__ . '/../src/FFIExtend.php';
 include_once __DIR__ . '/../src/ReflectionCFunction.php';
 
 $ffi = FFI::cdef("int printf(const char *format, ...);
@@ -21,7 +21,7 @@ $ffi = FFI::cdef("int printf(const char *format, ...);
  int errno;
     int gettimeofday(struct timeval *tv, struct timezone *tz); ", "libc.so.6");
 
-$c = new PhpApi;
+$c = new FFIExtend;
 $r = $c->hasCFunc($ffi, 'printf');
 var_dump('==== has printf():', $r);
 
