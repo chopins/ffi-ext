@@ -59,27 +59,27 @@ class ReflectionCFunction extends PhpApi implements Reflector
                 return \Closure::fromCallable([$this->ffi, $this->name]);
             case 1:
                 return function($a) {
-                    $this->ffi->{$this->name}($a);
+                    return $this->ffi->{$this->name}($a);
                 };
             case 2:
                 return function($a, $b) {
-                    $this->ffi->{$this->name}($a, $b);
+                    return $this->ffi->{$this->name}($a, $b);
                 };
             case 3:
                 return function($a, $b, $c) {
-                    $this->ffi->{$this->name}($a, $b, $c);
+                    return $this->ffi->{$this->name}($a, $b, $c);
                 };
             case 4:
                 return function($a, $b, $c, $d) {
-                    $this->ffi->{$this->name}($a, $b, $c, $d);
+                    return $this->ffi->{$this->name}($a, $b, $c, $d);
                 };
             case 5:
                 return function($a, $b, $c, $d, $e) {
-                    $this->ffi->{$this->name}($a, $b, $c, $d, $e);
+                    return $this->ffi->{$this->name}($a, $b, $c, $d, $e);
                 };
             case 6:
                 return function($a, $b, $c, $d, $e, $f) {
-                    $this->ffi->{$this->name}($a, $b, $c, $d, $e, $f);
+                    return $this->ffi->{$this->name}($a, $b, $c, $d, $e, $f);
                 };
             default:
                 $p = array_fill(0, $num, '$a');
@@ -88,7 +88,7 @@ class ReflectionCFunction extends PhpApi implements Reflector
                 }
                 $args = implode(',', $p);
                 $c = null;
-                eval("\$c = function($args){$this->ffi->{$this->name}($args)};");
+                eval("\$c = function($args){return $this->ffi->{$this->name}($args)};");
                 return $c;
         }
     }

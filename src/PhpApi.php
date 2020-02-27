@@ -14,6 +14,7 @@ namespace Toknot;
 use FFI;
 use FFI\CData;
 use FFI\CType;
+use TypeError;
 
 class PhpApi
 {
@@ -62,7 +63,7 @@ class PhpApi
         return self::$phpapi;
     }
 
-    public function ZEND_FFI_TYPE_KIND($name)
+    protected function ZEND_FFI_TYPE_KIND($name)
     {
         return array_search("ZEND_FFI_TYPE_$name", self::$ZEND_FFI_TYPE_KIND);
     }
@@ -114,7 +115,7 @@ class PhpApi
         }
     }
 
-    public function zvalValue($zval)
+    public function zvalValue(CData $zval)
     {
         switch($this->Z_TYPE($zval)) {
             case self::IS_LONG:
@@ -145,7 +146,7 @@ class PhpApi
             case self::IS_INDIRECT:
                 return $zval->value->zv;
             default:
-                throw new Exception('unknown type');
+                throw new TypeError('unknown type');
         }
     }
 
@@ -155,34 +156,34 @@ class PhpApi
         return $this->zvalValue($arr->arData->val);
     }
 
-    public function ZSTR_VAL($str)
+    public function ZSTR_VAL(CData $str)
     {
         return $str->val;
     }
 
-    public function ZSTR_LEN($str)
+    public function ZSTR_LEN(CData $str)
     {
         return $str->len;
     }
 
-    public function getCTypeName(FFI\CType $type)
+    public function getCTypeName(CType $type)
     {
         $typeCData = self::$phpapi->cast('zend_ffi_cdata*', $this->phpVar($type));
         $typeCData = $this->ZEND_FFI_TYPE($typeCData[0]->type);
         return $this->getCTypeCDataName($typeCData);
     }
 
-    public function Z_TYPE($zval)
+    public function Z_TYPE(CData $zval)
     {
         return $zval->u1->v->type;
     }
 
-    public function getZStr($zval)
+    public function getZStr(CData $zval)
     {
         return FFI::string($this->ZSTR_VAL($zval));
     }
 
-    public function Z_OBJ_P($obj)
+    public function Z_OBJ_P(CData $obj)
     {
         return $obj[0]->value->obj;
     }
@@ -308,7 +309,7 @@ class PhpApi
         return $v === null || FFI::isNull($v);
     }
 
-    public function zend_hash_find_ptr($zendArrayPtr, $name, $type)
+    public function zend_hash_find_ptr(CData $zendArrayPtr, CData $name, string $type)
     {
         $v = self::$phpapi->zend_hash_find($zendArrayPtr, $name);
         if($this->isNull($v)) {
@@ -318,13 +319,13 @@ class PhpApi
         return self::$phpapi->cast($type, $p);
     }
 
-    public function zend_hash_num_elements($zendArrayPtr)
+    public function zend_hash_num_elements(CData $zendArrayPtr)
     {
         $a = self::$phpapi->cast('zend_array*', $zendArrayPtr);
         return $a[0]->nNumOfElements;
     }
 
-    public function hasCFunc($ffi, string $name)
+    public function hasCFunc(FFI $ffi, string $name)
     {
         $zendObj = $this->phpVar($ffi);
         $zendStr = $this->phpVar($name);
@@ -339,7 +340,7 @@ class PhpApi
         return false;
     }
 
-    public static function Z_PTR_P($zval)
+    public static function Z_PTR_P(CData $zval)
     {
         return $zval[0]->value->ptr;
     }
@@ -350,14 +351,14 @@ class PhpApi
                 self::$phpapi->cast('uintptr_t', $t)->cdata & ~ self::ZEND_FFI_TYPE_OWNED);
     }
 
-    public function castAllSameType(FFI $ffi, &$args)
+    public function castAllSameType(FFI $ffi, array &$args)
     {
         foreach($args as &$v) {
             $this->castSameType($ffi, $v);
         }
     }
 
-    public function iteratorZendArray($hashTable, $callable)
+    public function iteratorZendArray(CData $hashTable, callable $callable)
     {
         for($i = 0; $i < $hashTable[0]->nNumUsed; $i++) {
 
