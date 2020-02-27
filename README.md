@@ -1,9 +1,9 @@
-# php-capi
+# php FFI Extend
 Call PHP C API
 
 # Reference
 
-### class `Toknot\PhpApi` of methods
+### class `Toknot\FFIExtend` of methods
  1. `__construct()`
  2. `phpffi() : ffi` : get ffi
  3. `castSameType(FFI $ffi, &$arg)`   cast to same type
