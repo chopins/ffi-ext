@@ -24,17 +24,11 @@ class ReflectionCFunction extends PhpApi implements Reflector
 
     public function __construct(FFI $ffi, $name)
     {
+        parent::__construct();
         $this->ffi = $ffi;
         $this->name = $name;
-        $zendObj = $this->phpVar($ffi);
-        $zendStr = $this->phpVar($name);
-        $zffi = $this->phpffi()->cast('zend_ffi*', $zendObj);
-        if($this->isNull($zffi->symbols)) {
-            throw new ReflectionException("C function $name does not exists");
-        }
-
-        $sym = $this->zend_hash_find_ptr($zffi->symbols, $zendStr, 'zend_ffi_symbol*');
-        if(!$this->isNull($sym) && $sym[0]->kind == self::ZEND_FFI_SYM_FUNC) {
+        $sym = $this->findSymobl($ffi, $name, self::ZEND_FFI_SYM_FUNC);
+        if(!$this->isNull($sym)) {
             $this->type = $this->ZEND_FFI_TYPE($sym[0]->type)[0];
             return;
         }

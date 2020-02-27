@@ -23,6 +23,8 @@ class PhpApi
     private static bool $HAVE_LONG_DOUBLE = false;
     private static array $ZEND_FFI_TYPE_KIND = [];
 
+    const ZEND_FFI_SYM_TYPE = 0;
+    const ZEND_FFI_SYM_VAR = 2;
     const ZEND_FFI_SYM_FUNC = 3;
     const ZEND_FFI_TYPE_OWNED = 1 << 0;
     const ZEND_FFI_ATTR_VARIADIC = 1 << 2;
@@ -325,19 +327,37 @@ class PhpApi
         return $a[0]->nNumOfElements;
     }
 
-    public function hasCFunc(FFI $ffi, string $name)
+    protected function findSymobl(FFI $ffi, string $symName, $symType)
     {
         $zendObj = $this->phpVar($ffi);
-        $zendStr = $this->phpVar($name);
+        $zendStr = $this->phpVar($symName);
         $zffi = self::$phpapi->cast('zend_ffi*', $zendObj);
         if($this->isNull($zffi->symbols)) {
-            return false;
+            return null;
         }
         $sym = $this->zend_hash_find_ptr($zffi->symbols, $zendStr, 'zend_ffi_symbol*');
-        if(!$this->isNull($sym) && $sym->kind == self::ZEND_FFI_SYM_FUNC) {
-            return true;
+        if($this->isNull($sym) || $sym[0]->kind !== $symType) {
+            return null;
         }
-        return false;
+        return $sym;
+    }
+
+    public function hasCFunc(FFI $ffi, string $name)
+    {
+        $sym = $this->findSymobl($ffi, $name, self::ZEND_FFI_SYM_FUNC);
+        return !$this->isNull($sym);
+    }
+
+    public function hasCVariable(FFI $ffi, string $name)
+    {
+        $sym = $this->findSymobl($ffi, $name, self::ZEND_FFI_SYM_VAR);
+        return !$this->isNull($sym);
+    }
+
+    public function hasCType(FFI $ffi, string $type)
+    {
+        $sym = $this->findSymobl($ffi, $type, self::ZEND_FFI_SYM_TYPE);
+        return !$this->isNull($sym) && $sym->kind;
     }
 
     public static function Z_PTR_P(CData $zval)
@@ -381,7 +401,7 @@ class PhpApi
             }
         }
     }
-    
+
     /**
      * PHP array to C Data of char*[] type, PHP array to char**
      *
@@ -398,8 +418,8 @@ class PhpApi
         $a = FFI::addr($p);
         return FFI::cast('char**', $a);
     }
-    
-     /**
+
+    /**
      * PHP string to C char* type
      *
      * @param string $string
