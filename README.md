@@ -18,14 +18,16 @@ Call PHP C API
  12. `isNull($v) : bool`  check `$v` whether is `NULL` or C `NULL`
  13. `zend_hash_find_ptr(CData $zendArrayPtr, CData $name, string $type): CData` find a value from php C hash array, and cast to `$type`
  14. `zend_hash_num_elements(CData $array) : int` get number of php C HashTable
- 15. `hasCFunc(FFI $ffi, string $name) : bool`  check given function `$name` whether in given FFI `$ffi`
- 16. `Z_PTR_P(CData $zval) : CData` php C `Z_PTR_P` macro, `$zval` must be pointer
- 17. `ZEND_FFI_TYPE(CData $t) : CData`  php FFI of `ZEND_FFI_TYPE` macro
- 18. `castAllSameType(FFI $ffi, array &$args)`   cast array of args to same type
- 19. `iteratorZendArray(CData $hashTable, callable $callable)`  iterator a zend HastTable, `$hashTable` must be pointer, the `$callable` smailer to `function callback($key, $value)`
- 20. `argsPtr(int $argc, array $argv): CData`  php `$argv` array to C `char**`
- 21. `strToCharPtr(string $string): CData`    php string to C `char*`
- 22. `strToCharArr(string $string): CData`  php string to C 'char[]`
+ 15. `hasCFunc(FFI $ffi, string $name) : bool`  check given `$name` of function whether in given FFI `$ffi`
+ 16. `hasCVariable(FFI $ffi, string $name) : bool`  check given `$name` of variable  whether in given FFI `$ffi`
+ 17. `hasCType(FFI $ffi, string $name) : bool`  check given `$name` of c type  whether in given FFI `$ffi`
+ 18. `Z_PTR_P(CData $zval) : CData` php C `Z_PTR_P` macro, `$zval` must be pointer
+ 19. `ZEND_FFI_TYPE(CData $t) : CData`  php FFI of `ZEND_FFI_TYPE` macro
+ 20. `castAllSameType(FFI $ffi, array &$args)`   cast array of args to same type
+ 21. `iteratorZendArray(CData $hashTable, callable $callable)`  iterator a zend HastTable, `$hashTable` must be pointer, the `$callable` smailer to `function callback($key, $value)`
+ 22. `argsPtr(int $argc, array $argv): CData`  php `$argv` array to C `char**`
+ 23. `strToCharPtr(string $string): CData`    php string to C `char*`
+ 24. `strToCharArr(string $string): CData`  php string to C 'char[]`
 * class `Toknot\ReflectionCFunction` of method
  1. `__construct(FFI $ffi, string $name)` Reflection FFI `$ffi` of C function `$name`
  2. `getName()` get function name
