@@ -50,7 +50,9 @@ class ReflectionCFunction extends PhpApi implements Reflector
         $num = $this->getNumberOfParameters();
         switch($num) {
             case 0:
-                return \Closure::fromCallable([$this->ffi, $this->name]);
+                return function() {
+                    return $this->ffi->{$this->name}();
+                };
             case 1:
                 return function($a) {
                     return $this->ffi->{$this->name}($a);
@@ -99,7 +101,11 @@ class ReflectionCFunction extends PhpApi implements Reflector
 
     public function getNumberOfParameters()
     {
-        return $this->type->func->args[0]->nNumOfElements;
+        $args = $this->type->func->args;
+        if($this->isNull($args)) {
+            return 0;
+        }
+        return $args[0]->nNumOfElements;
     }
 
     /**
