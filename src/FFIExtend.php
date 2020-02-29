@@ -357,7 +357,7 @@ class FFIExtend
     public function hasCType(FFI $ffi, string $type)
     {
         $sym = $this->findSymobl($ffi, $type, self::ZEND_FFI_SYM_TYPE);
-        return !$this->isNull($sym) && $sym->kind;
+        return !$this->isNull($sym);
     }
 
     public static function Z_PTR_P(CData $zval)
