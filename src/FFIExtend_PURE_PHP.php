@@ -369,25 +369,25 @@ class FFIExtend
             if(!$ex[0]->func[0]->op_array->last_var) {
                 return $symbol_table;
             }
-            $this->zend_hash_extend($symbol_table, $ex[0]->func[0]->op_array->last_var, 0);
+            //$this->zend_hash_extend($symbol_table, $ex[0]->func[0]->op_array->last_var, 0);
         } else {
             $symbol_table = $ex[0]->symbol_table = zend_new_array($ex[0]->func[0]->op_array->last_var);
             if($this->isNull($ex[0]->func[0]->op_array->last_var)) {
                 return $symbol_table;
             }
-            $this->zend_hash_real_init_mixed($symbol_table);
+            //$this->zend_hash_real_init_mixed($symbol_table);
             /* printf("Cache miss!  Initialized %x\n", EG(active_symbol_table)); */
         }
         if(!$this->isNull($ex[0]->func[0]->op_array->last_var)) {
-            $str = $ex[0]->func[0]->op_array->vars;
-            $end = $str + $ex[0]->func[0]->op_array->last_var;
-            $var = $this->ZEND_CALL_VAR_NUM($ex, 0);
+            //$str = $ex[0]->func[0]->op_array->vars;
+            //$end = $str + $ex[0]->func[0]->op_array->last_var;
+            //$var = $this->ZEND_CALL_VAR_NUM($ex, 0);
 
-            do {
+            /*do {
                 $this->zend_hash_append_ind($symbol_table, $str, $var);
                 $str++;
                 $var++;
-            } while($str != $end);
+            } while($str != $end);*/
         }
         return $symbol_table;
     }
