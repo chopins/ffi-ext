@@ -15,6 +15,7 @@ use FFI;
 use FFI\CData;
 use FFI\CType;
 use TypeError;
+use RuntimeException;
 
 class FFIExtend
 {
@@ -24,7 +25,6 @@ class FFIExtend
     private static $cffi = null;
     private static bool $HAVE_LONG_DOUBLE = false;
     private static array $ZEND_FFI_TYPE_KIND = [];
-    private $phpDll = '';
 
     const ZEND_FFI_SYM_TYPE = 0;
     const ZEND_FFI_SYM_VAR = 2;
@@ -131,15 +131,32 @@ class FFIExtend
 
         $code .= file_get_contents(__DIR__ . '/php.h');
         if(strcasecmp(PHP_OS_FAMILY, 'Windows') === 0) {
-            $this->phpDll = dirname(PHP_BINARY) . '/php7' . (PHP_ZTS ? 'ts' : 'nts') . '.dll';
             $code = str_replace('ZEND_FASTCALL', '__vectorcall', $code);
-            self::$ffi = FFI::cdef($code, $this->phpDll);
+            $phpDll = $this->findPhpDll();
+            self::$ffi = FFI::cdef($code, $phpDll);
         } else {
             $code = str_replace('ZEND_FASTCALL', '__attribute__((fastcall))', $code);
             self::$ffi = FFI::cdef($code);
         }
 
         $this->setZendffi();
+    }
+
+    protected function findPhpDll()
+    {
+        if(defined('PHP_DLL_FILE_PATH')) {
+            return PHP_DLL_FILE_PATH;
+        }
+        $f = '/php7' . (PHP_ZTS ? 'ts' : 'nts') . '.dll';
+        $p = dirname(PHP_BINARY) . $f;
+        if(file_exists($p)) {
+            return $p;
+        }
+        $p = dirname(ini_get('extension_dir')) . $f;
+        if(file_exists($p)) {
+            return $p;
+        }
+        throw new RuntimeException('Can not found php.dll');
     }
 
     protected function setZendffi()
@@ -215,8 +232,6 @@ class FFIExtend
         }
     }
 
-    
-
     public function ZSTR_VAL(CData $str)
     {
         return $str->val;
@@ -229,7 +244,7 @@ class FFIExtend
 
     public function getCTypeName(CType $type)
     {
-        $cdata =  $this->zval($type);
+        $cdata = $this->zval($type);
         $ffiCData = self::$ffi->cast('zend_ffi_cdata*', $cdata);
         $typeCData = $this->ZEND_FFI_TYPE($ffiCData[0]->type);
         return $this->getCTypeCDataName($typeCData);
