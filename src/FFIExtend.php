@@ -20,10 +20,10 @@ class FFIExtend
 {
 
     public static bool $usePhpImplement = false;
-    private static $phpapi = null;
+    private static $ffi = null;
+    private static $cffi = null;
     private static bool $HAVE_LONG_DOUBLE = false;
     private static array $ZEND_FFI_TYPE_KIND = [];
-    private static bool $isWin = false;
     private $phpDll = '';
 
     const ZEND_FFI_SYM_TYPE = 0;
@@ -61,7 +61,7 @@ class FFIExtend
 
     public function __construct()
     {
-        if(self::$phpapi === null) {
+        if(self::$ffi === null) {
             $this->versionMacro();
             $this->initPhpApi();
         }
@@ -69,7 +69,7 @@ class FFIExtend
 
     public function getffi()
     {
-        return self::$phpapi;
+        return self::$ffi;
     }
 
     protected function ZEND_FFI_TYPE_KIND($name)
@@ -85,28 +85,13 @@ class FFIExtend
             self::$IS_ALIAS_PTR = 15;
             self::$_IS_NUMBER = 20;
         }
+        $this->ffiTypeArray();
     }
 
-    private function initPhpApi()
+    protected function ffiTypeArray()
     {
-        $bitSize = PHP_INT_SIZE * 8;
-        $code = "typedef int{$bitSize}_t zend_long;typedef uint{$bitSize}_t zend_ulong;typedef int{$bitSize}_t zend_off_t;";
-
-        $code .= file_get_contents(__DIR__ . '/php.h');
-        if(strcasecmp(PHP_OS_FAMILY, 'Windows') === 0) {
-            $this->phpDll = dirname(PHP_BINARY) . '/php7' . (PHP_ZTS ? 'ts' : 'nts') . '.dll';
-            self::$phpapi = FFI::cdef($code, $this->phpDll);
-            self::$isWin = true;
-        } else {
-            $code .= 'extern HashTable* zend_array_dup(HashTable *source);zval* zend_hash_find(const HashTable *ht, zend_string *key);';
-            self::$phpapi = FFI::cdef($code);
-        }
         try {
-            $a = FFI::type('long double');
-            ob_start();
-            var_dump($a);
-            $types = ob_get_clean();
-            if(strpos($types, 'object(FFI\CType:long double)') === 0) {
+            if(FFI::sizeof(FFI::type('long double')) > 8) {
                 self::$HAVE_LONG_DOUBLE = true;
             } else {
                 self::$HAVE_LONG_DOUBLE = false;
@@ -137,6 +122,30 @@ class FFIExtend
             'ZEND_FFI_TYPE_ARRAY',
             'ZEND_FFI_TYPE_STRUCT',
         ]);
+    }
+
+    private function initPhpApi()
+    {
+        $bitSize = PHP_INT_SIZE * 8;
+        $code = "typedef int{$bitSize}_t zend_long;typedef uint{$bitSize}_t zend_ulong;typedef int{$bitSize}_t zend_off_t;";
+
+        $code .= file_get_contents(__DIR__ . '/php.h');
+        if(strcasecmp(PHP_OS_FAMILY, 'Windows') === 0) {
+            $this->phpDll = dirname(PHP_BINARY) . '/php7' . (PHP_ZTS ? 'ts' : 'nts') . '.dll';
+            $code = str_replace('ZEND_FASTCALL', '__vectorcall', $code);
+            self::$ffi = FFI::cdef($code, $this->phpDll);
+        } else {
+            $code = str_replace('ZEND_FASTCALL', '__attribute__((fastcall))', $code);
+            self::$ffi = FFI::cdef($code);
+        }
+
+        $this->setZendffi();
+    }
+
+    protected function setZendffi()
+    {
+        $obj = $this->zval(self::$ffi);
+        self::$cffi = self::$ffi->cast('zend_ffi*', $obj);
     }
 
     public function castSameType(FFI $ffi, &$arg)
@@ -185,8 +194,8 @@ class FFIExtend
 
     public function zval($v)
     {
-        $ex = self::$phpapi->zend_rebuild_symbol_table();
-        $sym = $this->zend_array_dup($ex);
+        $ex = self::$ffi->zend_rebuild_symbol_table();
+        $sym = self::$ffi->zend_array_dup($ex);
         return $this->zvalValue($sym->arData->val);
     }
 
@@ -197,19 +206,19 @@ class FFIExtend
 
     public function HT_HASH_SIZE($mask)
     {
-        $m = self::$phpapi->cast('int32_t', $mask);
-        $p = self::$phpapi->cast('uint32_t', -1 * $m->cdata);
-        $s = self::$phpapi->new('size_t');
+        $m = self::$ffi->cast('int32_t', $mask);
+        $p = self::$ffi->cast('uint32_t', -1 * $m->cdata);
+        $s = self::$ffi->new('size_t');
         if(FFI::sizeof($s) > FFI::sizeof($p)) {
-            return $p->cdata * $this->sizeof(self::$phpapi, 'uint32_t');
+            return $p->cdata * $this->sizeof(self::$ffi, 'uint32_t');
         } else {
-            return self::$phpapi->cast('size_t', $p)->cdata * $this->sizeof(self::$phpapi, 'uint32_t');
+            return self::$ffi->cast('size_t', $p)->cdata * $this->sizeof(self::$ffi, 'uint32_t');
         }
     }
 
     public function cast2Size(CData $data, $ffi = null)
     {
-        $f = $ffi ?? self::$phpapi;
+        $f = $ffi ?? self::$ffi;
         $s = $f->new('size_t');
         if(FFI::sizeof($s) > FFI::sizeof($data)) {
             return $s->cdata = $data->cdata;
@@ -220,14 +229,13 @@ class FFIExtend
 
     public function emalloc($size)
     {
-        $ptr = self::$phpapi->new("char[$size]");
-        FFI::memset($ptr, 0, $size);
-        return self::$phpapi->cast('void*', $ptr);
+        $ptr = self::$ffi->new("char[$size]", false);
+        return self::$ffi->cast('void*', $ptr);
     }
 
     public function win_zend_array_dup($source)
     {
-        $target = FFI::addr(self::$phpapi->new('HashTable'));
+        $target = FFI::addr(self::$ffi->new('HashTable'));
         $target[0]->gc->refcount = 1;
         $target[0]->gc->u->type_info = (self::IS_ARRAY | ((1 << 4) << 0));
         $flags = ($source[0]->u->flags & 0xff);
@@ -239,41 +247,39 @@ class FFIExtend
 
         $target[0]->nTableSize = $source[0]->nTableSize;
 
-        $s = self::$phpapi->new('size_t');
+        $s = self::$ffi->new('size_t');
         if(FFI::sizeof($s) > FFI::sizeof($target[0]->nTableSize)) {
             $tableSize = $target[0]->nTableSize;
         } else {
-            $tableSize = self::$phpapi->cast('size_t', $target[0]->nTableSize)->cdata;
+            $tableSize = self::$ffi->cast('size_t', $target[0]->nTableSize)->cdata;
         }
 
-        $htsize = (($tableSize * $this->sizeof(self::$phpapi, 'Bucket')) + $this->HT_HASH_SIZE($target[0]->nTableMask));
-        $ema = $this->emalloc($htsize);
+        $htsize = (($tableSize * $this->sizeof(self::$ffi, 'Bucket')) + $this->HT_HASH_SIZE($target[0]->nTableMask));
+       
+        $data = self::$ffi->cast('char*', $this->emalloc($htsize));
+        $target[0]->arData = self::$ffi->cast('Bucket*', $data + $this->HT_HASH_SIZE($target[0]->nTableMask));
 
-        $data = self::$phpapi->cast('char*', $ema);
+        $idx = (self::$ffi->cast('int32_t', $target[0]->nTableMask));
+        $ptr = self::$ffi->cast('uint32_t', self::$ffi->cast("uint32_t*", $target[0]->arData)[$idx->cdata]);
 
-        $target[0]->arData = self::$phpapi->cast('Bucket*', $data + $this->HT_HASH_SIZE($target[0]->nTableMask));
-
-        $idx = (self::$phpapi->cast('int32_t', $target[0]->nTableMask));
-        $ptr = self::$phpapi->cast('uint32_t', self::$phpapi->cast('uint32_t*', $target[0]->arData)[$idx->cdata]);
         FFI::memset(FFI::addr($ptr), -1, $this->HT_HASH_SIZE($target->nTableMask));
 
         if($source[0]->nNumUsed == $source[0]->nNumOfElements) {
-            $idx = $this->zend_array_dup_elements($source, $target[0], 1, 0);
+            $idx = $this->zend_array_dup_elements($source, $target, 1, 0);
         } else {
-            $idx = $this->zend_array_dup_elements($source, $target[0], 1, 1);
+            $idx = $this->zend_array_dup_elements($source, $target, 1, 1);
         }
         $target[0]->nNumUsed = $idx;
         $target[0]->nNumOfElements = $idx;
         return $target;
     }
 
-    protected function zend_array_dup_elements($source, $target, $static_keys, $with_holes)
+    protected function zend_array_dup_elements($source, &$target, $static_keys, $with_holes)
     {
         $idx = 0;
-        $q = $target->arData;
+        $q = $target[0]->arData;
         $p = $source[0]->arData;
         $end = $p + $source[0]->nNumUsed;
-
         do {
             if(!$this->zend_array_dup_element($source, $target, $idx, $p, $q, 0, $static_keys, $with_holes)) {
                 $target_idx = $idx;
@@ -282,7 +288,7 @@ class FFIExtend
                 while($p != $end) {
                     if($this->zend_array_dup_element($source, $target, $target_idx, $p, $q, 0, $static_keys, $with_holes)) {
                         if($source[0]->nInternalPointer == $idx) {
-                            $target->nInternalPointer = $target_idx;
+                            $target[0]->nInternalPointer = $target_idx;
                         }
                         $target_idx++;
                         $q++;
@@ -304,9 +310,9 @@ class FFIExtend
         return $zval->u1->type_info;
     }
 
-    protected function zend_array_dup_element($source, $target, $idx, $p, $q, $packed, $static_keys, $with_holes)
+    protected function zend_array_dup_element($source, &$target, $idx, $p, &$q, $packed, $static_keys, $with_holes)
     {
-        $data = $p->val;
+        $data = $p[0]->val;
         $Z_TYPE_FLAGS_MASK = 0xff00;
         if($with_holes) {
             if(!$packed && $data->u1->type_info === self::$IS_INDIRECT) {
@@ -339,49 +345,40 @@ class FFIExtend
         $_t = $data->u1->type_info;
 
         if(PHP_INT_SIZE === 8) {
-            $q->val->value->counted = $_gc;
-            $q->val->u1->type_info = $_t;
+            $q[0]->val->value->counted = $_gc;
+            $q[0]->val->u1->type_info = $_t;
         } else {
             $_w2 = $data->value->ww->w2;
-            $q->val->value->counted = $_gc;
-            $q->val->value->ww->w2 = $_w2;
-            $q->val->u1->type_info = $_t;
+            $q[0]->val->value->counted = $_gc;
+            $q[0]->val->value->ww->w2 = $_w2;
+            $q[0]->val->u1->type_info = $_t;
         }
-        $q->h = $p->h;
+        $q[0]->h = $p[0]->h;
 
         if($packed) {
-            $q->key = null;
+            $q[0]->key = null;
             return 1;
         }
 
-        $q->key = $p->key;
-        if(!$static_keys && $q->key) {
-            if(!((($q->key[0]->gc->u->type_info >> 0) & (0x000003f0 >> 0)) & (1 << 6))) {
-                $q->key[0]->value->counted->gc->refcount = $q->key[0]->value->counted->gc->refcount + 1;
+        $q[0]->key = $p[0]->key;
+        if(!$static_keys && $q[0]->key) {
+            if(!((($q[0]->key[0]->gc->u->type_info >> 0) & (0x000003f0 >> 0)) & (1 << 6))) {
+                $q[0]->key[0]->value->counted->gc->refcount = $q[0]->key[0]->value->counted->gc->refcount + 1;
             }
         }
 
-        $nIndex = self::$phpapi->cast('int32_t', self::$phpapi->cast('uint32_t', ($q->h | $target->nTableMask)))->cdata;
-        $q[0]->val->u2->next = self::$phpapi->cast('uint32_t*', $target->arData)[$nIndex];
-        self::$phpapi->cast('uint32_t*', $target->arData)[$nIndex] = ($idx * $this->sizeof(self::$phpapi, 'Bucket'));
+        $nIndex = self::$ffi->cast('int32_t', self::$ffi->cast('uint32_t', ($q[0]->h | $target[0]->nTableMask)))->cdata;
+        $q[0]->val->u2->next =  self::$ffi->cast('uint32_t*', $target[0]->arData)[$nIndex];
+        self::$ffi->cast('uint32_t*', $target[0]->arData)[$nIndex] = ($idx * $this->sizeof(self::$ffi, 'Bucket'));
         return 1;
     }
 
     public function zend_array_dup($arr)
     {
-        if(self::$isWin || self::$usePhpImplement) {
+        if(self::$usePhpImplement) {
             return $this->win_zend_array_dup($arr);
         } else {
-            return self::$phpapi->zend_array_dup($arr);
-        }
-    }
-
-    public function zend_hash_find($arr, $name)
-    {
-        if(self::$isWin) {
-            return $this->callFuncWindows('zend_hash_find@@8', [$arr, $name]);
-        } else {
-            return self::$phpapi->zend_hash_find($arr, $name);
+            return self::$ffi->zend_array_dup($arr);
         }
     }
 
@@ -397,8 +394,9 @@ class FFIExtend
 
     public function getCTypeName(CType $type)
     {
-        $typeCData = self::$phpapi->cast('zend_ffi_cdata*', $this->zval($type));
-        $typeCData = $this->ZEND_FFI_TYPE($typeCData[0]->type);
+        $cdata =  $this->zval($type);
+        $ffiCData = self::$ffi->cast('zend_ffi_cdata*', $cdata);
+        $typeCData = $this->ZEND_FFI_TYPE($ffiCData[0]->type);
         return $this->getCTypeCDataName($typeCData);
     }
 
@@ -540,17 +538,17 @@ class FFIExtend
 
     public function zend_hash_find_ptr(CData $zendArrayPtr, CData $name, string $type)
     {
-        $v = $this->zend_hash_find($zendArrayPtr, $name);
+        $v = self::$ffi->zend_hash_find($zendArrayPtr, $name);
         if($this->isNull($v)) {
             return NULL;
         }
         $p = self::Z_PTR_P($v);
-        return self::$phpapi->cast($type, $p);
+        return self::$ffi->cast($type, $p);
     }
 
     public function zend_hash_num_elements(CData $zendArrayPtr)
     {
-        $a = self::$phpapi->cast('zend_array*', $zendArrayPtr);
+        $a = self::$ffi->cast('zend_array*', $zendArrayPtr);
         return $a[0]->nNumOfElements;
     }
 
@@ -558,7 +556,7 @@ class FFIExtend
     {
         $zendObj = $this->zval($ffi);
         $zendStr = $this->zval($symName);
-        $zffi = self::$phpapi->cast('zend_ffi*', $zendObj);
+        $zffi = self::$ffi->cast('zend_ffi*', $zendObj);
         if($this->isNull($zffi->symbols)) {
             return null;
         }
@@ -594,8 +592,8 @@ class FFIExtend
 
     public function ZEND_FFI_TYPE($t)
     {
-        return self::$phpapi->cast('zend_ffi_type*',
-                self::$phpapi->cast('uintptr_t', $t)->cdata & ~ self::ZEND_FFI_TYPE_OWNED);
+        return self::$ffi->cast('zend_ffi_type*',
+                self::$ffi->cast('uintptr_t', $t)->cdata & ~ self::ZEND_FFI_TYPE_OWNED);
     }
 
     public function castAllSameType(FFI $ffi, array &$args)
@@ -638,7 +636,7 @@ class FFIExtend
      */
     public function argsPtr(int $argc, array $argv): CData
     {
-        $p = self::$phpapi->new("char *[$argc]", false);
+        $p = self::$ffi->new("char *[$argc]", false);
         foreach($argv as $i => $arg) {
             $p[$i] = $this->strToCharPtr($arg);
         }
@@ -667,9 +665,9 @@ class FFIExtend
     public function strToCharArr(string $string): CData
     {
         $len = strlen($string);
-        $charArr = self::$phpapi->new("char[$len]", false);
+        $charArr = self::$ffi->new("char[$len]", false);
         for($i = 0; $i < $len; $i++) {
-            $char = self::$phpapi->new('char', false);
+            $char = self::$ffi->new('char', false);
             $char->cdata = $string[$i];
             $charArr[$i] = $char;
         }

@@ -463,5 +463,5 @@ typedef union _mm_align_test {
 
 //extern zend_executor_globals executor_globals;
 extern zend_array *zend_rebuild_symbol_table(void);
-//extern HashTable*  zend_array_dup(HashTable *source);
-//zval* zend_hash_find(const HashTable *ht, zend_string *key);
+ZEND_FASTCALL HashTable*  zend_array_dup(HashTable *source);
+ZEND_FASTCALL zval* zend_hash_find(const HashTable *ht, zend_string *key);
