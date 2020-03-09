@@ -147,7 +147,7 @@ class FFIExtend
         if(defined('PHP_DLL_FILE_PATH')) {
             return PHP_DLL_FILE_PATH;
         }
-        $f = '/php7' . (PHP_ZTS ? 'ts' : 'nts') . '.dll';
+        $f = '/php7' . (PHP_ZTS ? 'ts' : '') . '.dll';
         $p = dirname(PHP_BINARY) . $f;
         if(file_exists($p)) {
             return $p;
