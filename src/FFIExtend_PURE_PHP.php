@@ -251,6 +251,168 @@ class FFIExtend
         $d[-1] = -1;
     }
 
+    public function emalloc($size)
+    {
+        $ptr = self::$ffi->new("char[$size]", false);
+        return self::$ffi->cast('void*', $ptr);
+    }
+
+    public function win_zend_array_dup($source)
+    {
+        $target = FFI::addr(self::$ffi->new('HashTable'));
+        $target[0]->gc->refcount = 1;
+        $target[0]->gc->u->type_info = (self::IS_ARRAY | ((1 << 4) << 0));
+        $flags = ($source[0]->u->flags & 0xff);
+        $target[0]->u->flags = $flags;
+        $target[0]->nTableMask = $source[0]->nTableMask;
+        $target[0]->nNextFreeElement = $source[0]->nNextFreeElement;
+        $target[0]->nInternalPointer = ($source[0]->nInternalPointer < $source[0]->nNumUsed) ?
+            $source[0]->nInternalPointer : 0;
+
+        $target[0]->nTableSize = $source[0]->nTableSize;
+
+        $s = self::$ffi->new('size_t');
+        if(FFI::sizeof($s) > FFI::sizeof($target[0]->nTableSize)) {
+            $tableSize = $target[0]->nTableSize;
+        } else {
+            $tableSize = self::$ffi->cast('size_t', $target[0]->nTableSize)->cdata;
+        }
+
+        $htsize = (($tableSize * $this->sizeof(self::$ffi, 'Bucket')) + $this->HT_HASH_SIZE($target[0]->nTableMask));
+
+        $data = self::$ffi->cast('char*', $this->emalloc($htsize));
+        $target[0]->arData = self::$ffi->cast('Bucket*', $data + $this->HT_HASH_SIZE($target[0]->nTableMask));
+
+        $idx = (self::$ffi->cast('int32_t', $target[0]->nTableMask));
+        $ptr = self::$ffi->cast('uint32_t', self::$ffi->cast("uint32_t*", $target[0]->arData)[$idx->cdata]);
+
+        FFI::memset(FFI::addr($ptr), -1, $this->HT_HASH_SIZE($target->nTableMask));
+
+        if($source[0]->nNumUsed == $source[0]->nNumOfElements) {
+            $idx = $this->zend_array_dup_elements($source, $target, 1, 0);
+        } else {
+            $idx = $this->zend_array_dup_elements($source, $target, 1, 1);
+        }
+        $target[0]->nNumUsed = $idx;
+        $target[0]->nNumOfElements = $idx;
+        return $target;
+    }
+
+    protected function zend_array_dup_elements($source, &$target, $static_keys, $with_holes)
+    {
+        $idx = 0;
+        $q = $target[0]->arData;
+        $p = $source[0]->arData;
+        $end = $p + $source[0]->nNumUsed;
+        do {
+            if(!$this->zend_array_dup_element($source, $target, $idx, $p, $q, 0, $static_keys, $with_holes)) {
+                $target_idx = $idx;
+                $idx++;
+                $p++;
+                while($p != $end) {
+                    if($this->zend_array_dup_element($source, $target, $target_idx, $p, $q, 0, $static_keys, $with_holes)) {
+                        if($source[0]->nInternalPointer == $idx) {
+                            $target[0]->nInternalPointer = $target_idx;
+                        }
+                        $target_idx++;
+                        $q++;
+                    }
+                    $idx++;
+                    $p++;
+                }
+                return $target_idx;
+            }
+            $idx++;
+            $p++;
+            $q++;
+        } while($p != $end);
+        return $idx;
+    }
+
+    public function HT_HASH_SIZE($mask)
+    {
+        $m = self::$ffi->cast('int32_t', $mask);
+        $p = self::$ffi->cast('uint32_t', -1 * $m->cdata);
+        $s = self::$ffi->new('size_t');
+        if(FFI::sizeof($s) > FFI::sizeof($p)) {
+            return $p->cdata * $this->sizeof(self::$ffi, 'uint32_t');
+        } else {
+            return self::$ffi->cast('size_t', $p)->cdata * $this->sizeof(self::$ffi, 'uint32_t');
+        }
+    }
+
+    protected function zend_array_dup_element($source, &$target, $idx, $p, &$q, $packed, $static_keys, $with_holes)
+    {
+        $data = $p[0]->val;
+        $Z_TYPE_FLAGS_MASK = 0xff00;
+        if($with_holes) {
+            if(!$packed && $data->u1->type_info === self::$IS_INDIRECT) {
+                $data = $data->value->zv;
+            }
+            if($data->u1->type_info === self::IS_UNDEF) {
+                return 0;
+            }
+        } elseif(!$packed) {
+            if($data->u1->type_info == self::$IS_INDIRECT) {
+                $data = $data->value->zv;
+                if($data->u1->type_info === self::IS_UNDEF) {
+                    return 0;
+                }
+            }
+        }
+        do {
+            if(($data->u1->type_info & $Z_TYPE_FLAGS_MASK) != 0) {
+                if($this->Z_TYPE($data) === self::IS_REFERENCE && $data->value->counted->gc[0]->refcount == 1 && ($this->Z_TYPE($data->value->ref->val) != self::IS_ARRAY ||
+                    $data->value->ref->val->value->arr != $source)) {
+                    $data = $data->value->ref->val;
+                    if(!($data->u1->type_info & $Z_TYPE_FLAGS_MASK) != 0) {
+                        break;
+                    }
+                }
+                $data->value->counted->gc->refcount = $data->value->counted->gc->refcount + 1;
+            }
+        } while(0);
+        $_gc = $data->value->counted;
+        $_t = $data->u1->type_info;
+
+        if(PHP_INT_SIZE === 8) {
+            $q[0]->val->value->counted = $_gc;
+            $q[0]->val->u1->type_info = $_t;
+        } else {
+            $_w2 = $data->value->ww->w2;
+            $q[0]->val->value->counted = $_gc;
+            $q[0]->val->value->ww->w2 = $_w2;
+            $q[0]->val->u1->type_info = $_t;
+        }
+        $q[0]->h = $p[0]->h;
+
+        if($packed) {
+            $q[0]->key = null;
+            return 1;
+        }
+
+        $q[0]->key = $p[0]->key;
+        if(!$static_keys && $q[0]->key) {
+            if(!((($q[0]->key[0]->gc->u->type_info >> 0) & (0x000003f0 >> 0)) & (1 << 6))) {
+                $q[0]->key[0]->value->counted->gc->refcount = $q[0]->key[0]->value->counted->gc->refcount + 1;
+            }
+        }
+
+        $nIndex = self::$ffi->cast('int32_t', self::$ffi->cast('uint32_t', ($q[0]->h | $target[0]->nTableMask)))->cdata;
+        $q[0]->val->u2->next = self::$ffi->cast('uint32_t*', $target[0]->arData)[$nIndex];
+        self::$ffi->cast('uint32_t*', $target[0]->arData)[$nIndex] = ($idx * $this->sizeof(self::$ffi, 'Bucket'));
+        return 1;
+    }
+
+    public function zend_array_dup($arr)
+    {
+        if(self::$usePhpImplement) {
+            return $this->win_zend_array_dup($arr);
+        } else {
+            return self::$ffi->zend_array_dup($arr);
+        }
+    }
+
     public function zend_hash_real_init_packed_ex(&$ht)
     {
         if($this->GC_FLAGS($ht) & (1 << 7)) {
@@ -383,11 +545,11 @@ class FFIExtend
             //$end = $str + $ex[0]->func[0]->op_array->last_var;
             //$var = $this->ZEND_CALL_VAR_NUM($ex, 0);
 
-            /*do {
-                $this->zend_hash_append_ind($symbol_table, $str, $var);
-                $str++;
-                $var++;
-            } while($str != $end);*/
+            /* do {
+              $this->zend_hash_append_ind($symbol_table, $str, $var);
+              $str++;
+              $var++;
+              } while($str != $end); */
         }
         return $symbol_table;
     }
