@@ -8,7 +8,7 @@ Call PHP C API
  2. `phpffi() : ffi` : get ffi
  3. `castSameType(FFI $ffi, &$arg)`   cast to same type
  4. `zvalValue(FFI\CData $zval) : CData`     get value of php C zval struct
- 5. `phpVar($var): CData`  transform php value to php C zval
+ 5. `zval($var): CData`  transform php value to php C zval
  6. `ZSTR_VAL(CData $str) : CData`  php C `ZSTR_VAL` macro
  7. `ZSTR_LEN(CData $str) : int`  php C `ZSTR_LEN` macro
  8. `getCTypeName(CType $type):string`  get C type name
