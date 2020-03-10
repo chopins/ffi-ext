@@ -1,11 +1,11 @@
 <?php
 
 /**
- * php-capi (http://toknot.com)
+ * php-ffi-extend (http://toknot.com)
  *
  * @copyright  Copyright (c) 2020 Szopen Xiao (Toknot.com)
  * @license    http://toknot.com/LICENSE.txt New BSD License
- * @link       https://github.com/chopins/php-capi
+ * @link       https://github.com/chopins/ffi-ext
  * @version    0.1
  */
 
