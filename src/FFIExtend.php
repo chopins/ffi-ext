@@ -215,6 +215,11 @@ class FFIExtend
         $sym = self::$ffi->zend_array_dup($ex);
         return $this->zvalValue($sym->arData->val);
     }
+    
+    public function emalloc($size)
+    {
+        return self::$ffi->cast('void*', self::$ffi->new("char[$size]"), false);
+    }
 
     public function sizeof($ffi, $type)
     {

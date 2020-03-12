@@ -9,6 +9,8 @@
  * @version    0.1
  */
 
+/**         Only FFI Development Demo          ***/
+
 namespace Toknot;
 
 use FFI;
@@ -64,7 +66,6 @@ class FFIExtend
         if(self::$phpapi === null) {
             $this->initPhpApi();
         }
-        var_dump(FFI::sizeof(self::$phpapi->type('Bucket')));
     }
 
     public function getffi()
