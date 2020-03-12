@@ -1,7 +1,13 @@
 # php FFI Extend
 Call PHP C API
 
-__Note: On windows, can be define constant `PHP_DLL_FILE_PATH` for specify `php7.dll` or `php7ts.dll` path__
+php DLL(php7.dll,php7ts) find:
+  * like unix os, Usually does not require additional loading
+  * windows,  
+    * first, load user constant `PHP_DLL_FILE_PATH`
+    * second, load directory of predefined constant `PHP_BINARY`
+    * third, load php parent directory of ext directory
+__Note:  constant `PHP_DLL_FILE_PATH` work for like unix OS
 # Reference
 
 ### class `Toknot\FFIExtend` of methods

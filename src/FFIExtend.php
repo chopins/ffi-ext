@@ -136,7 +136,11 @@ class FFIExtend
             self::$ffi = FFI::cdef($code, $phpDll);
         } else {
             $code = str_replace('ZEND_FASTCALL', '__attribute__((fastcall))', $code);
-            self::$ffi = FFI::cdef($code);
+            if(defined('PHP_DLL_FILE_PATH')) {
+                self::$ffi = FFI::cdef($code, PHP_DLL_FILE_PATH);
+            } else {
+                self::$ffi = FFI::cdef($code);
+            }
         }
 
         $this->setZendffi();
