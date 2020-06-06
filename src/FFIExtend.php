@@ -61,6 +61,7 @@ class FFIExtend
 
     public function __construct()
     {
+        defined('PHP_DLL_FILE_PATH') || define('PHP_DLL_FILE_PATH', false);
         if(self::$ffi === null) {
             $this->versionMacro();
             $this->initPhpApi();
@@ -136,7 +137,7 @@ class FFIExtend
             self::$ffi = FFI::cdef($code, $phpDll);
         } else {
             $code = str_replace('ZEND_FASTCALL', '__attribute__((fastcall))', $code);
-            if(defined('PHP_DLL_FILE_PATH')) {
+            if(PHP_DLL_FILE_PATH) {
                 self::$ffi = FFI::cdef($code, PHP_DLL_FILE_PATH);
             } else {
                 self::$ffi = FFI::cdef($code);
@@ -148,7 +149,7 @@ class FFIExtend
 
     protected function findPhpDll()
     {
-        if(defined('PHP_DLL_FILE_PATH')) {
+        if(PHP_DLL_FILE_PATH) {
             return PHP_DLL_FILE_PATH;
         }
         $f = '/php7' . (PHP_ZTS ? 'ts' : '') . '.dll';

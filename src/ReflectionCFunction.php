@@ -21,12 +21,14 @@ class ReflectionCFunction extends FFIExtend implements Reflector
     private $name = '';
     private $ffi = null;
     private $type = null;
+    private static $preName;
 
     public function __construct(FFI $ffi, $name)
     {
         parent::__construct();
         $this->ffi = $ffi;
         $this->name = $name;
+        self::$preName = $name;
         $sym = $this->findSymobl($ffi, $name, self::ZEND_FFI_SYM_FUNC);
         if(!$this->isNull($sym)) {
             $this->type = $this->ZEND_FFI_TYPE($sym[0]->type)[0];
@@ -42,7 +44,7 @@ class ReflectionCFunction extends FFIExtend implements Reflector
 
     public static function export()
     {
-        return $this->name;
+        return self::$preName;
     }
 
     public function getClosure()
