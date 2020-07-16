@@ -7,6 +7,7 @@ php DLL(php7.dll,php7ts) find order, if file exists loading:
     * first, find user constant `PHP_DLL_FILE_PATH`
     * second, find directory of predefined constant `PHP_BINARY`
     * third, find php parent directory of ext directory
+
 __Note:  constant `PHP_DLL_FILE_PATH` work for like unix OS
 # Reference
 
