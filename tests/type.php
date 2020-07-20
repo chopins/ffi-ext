@@ -10,3 +10,5 @@ $rt = $c->argsPtr(3, ['a===', 'bcs', 'esfsa']);
 $type2 = FFI::typeof($rt);
 var_dump($type2);
 var_dump($c->getCTypeName($type2));
+
+var_dump($c->is64());
