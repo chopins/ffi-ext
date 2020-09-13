@@ -157,7 +157,7 @@ class FFIExtend
 
         $code .= file_get_contents(__DIR__ . '/php.h');
         if(defined('PHP_FFI_EXTEND_APPEND_CDEF')) {
-            $code .= PHP_FFI_EXTEND_CDEF;
+            $code .= PHP_FFI_EXTEND_APPEND_CDEF;
         }
 
         if (strcasecmp(PHP_OS_FAMILY, 'Windows') === 0) {
