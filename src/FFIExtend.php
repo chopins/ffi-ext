@@ -156,6 +156,10 @@ class FFIExtend
         $code = "typedef int{$bitSize}_t zend_long;typedef uint{$bitSize}_t zend_ulong;typedef int{$bitSize}_t zend_off_t;";
 
         $code .= file_get_contents(__DIR__ . '/php.h');
+        if(defined('PHP_FFI_EXTEND_SUFFIX_CDEF')) {
+            $code .= PHP_FFI_EXTEND_CDEF;
+        }
+
         if (strcasecmp(PHP_OS_FAMILY, 'Windows') === 0) {
             $code = str_replace('ZEND_FASTCALL', '__vectorcall', $code);
             $phpDll = $this->findPhpDll();
