@@ -14,6 +14,8 @@ php DLL(php7.dll,php7ts.dll) find order, if file exists loading:
 
 **Note: constant `PHP_DLL_FILE_PATH` work for like unix OS**
 
+**constant `PHP_FFI_EXTEND_APPEND_CDEF` is append cdef code
+
 # Reference
 
 ### class `Toknot\FFIExtend` of methods
