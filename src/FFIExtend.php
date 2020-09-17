@@ -291,6 +291,9 @@ class FFIExtend
 
     public function getCTypeName(CType $type)
     {
+        if(method_exists('FFI\CType', 'getName')) {
+            return $type->getName();
+        }
         $cdata = $this->zval($type);
         $ffiCData = self::$ffi->cast('zend_ffi_cdata*', $cdata);
         $typeCData = $this->ZEND_FFI_TYPE($ffiCData[0]->type);
