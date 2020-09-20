@@ -451,7 +451,7 @@ class FFIExtend
         return $v === null || ($this->isCData($v) && FFI::isNull($v));
     }
 
-    public function isIntPtr($v) {
+    public function isPtr($v) {
         if(!$this->isCData($v)) {
             return false;
         }
