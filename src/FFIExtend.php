@@ -317,6 +317,9 @@ class FFIExtend
 
     protected function getCTypeCDataName(FFI\CData $type)
     {
+        if(method_exists('FFI\CType', 'getName')) {
+            return FFI::typeof($type)->getName();
+        }
         $is_ptr = false;
         $buf = '';
         $name = '';
@@ -431,9 +434,37 @@ class FFIExtend
         return "$name{$buf}";
     }
 
-    public function isNull(?CData $v)
+    public function newIntPtr(string $type = 'int', ?int $value = null) {
+        $int = self::$ffi->new($type, 0);
+        if($value !== null) {
+            $int->cdata = $value;
+        }
+        return FFI::addr($int);
+    }
+
+    public function isCData($v) {
+        return $v instanceof CData;
+    }
+
+    public function isNull($v)
     {
-        return $v === null || FFI::isNull($v);
+        return $v === null || ($this->isCData($v) && FFI::isNull($v));
+    }
+
+    public function isIntPtr($v) {
+        if(!$this->isCData($v)) {
+            return false;
+        }
+        return (strpos($this->getCTypeCDataName($v), '*') >= 0);
+    }
+
+    public function getIntValue($v) {
+        if($this->isIntPtr($v)) {
+            return $v[0];
+        } elseif($this->isCData($v)) {
+            return $v->cdata;
+        }
+        return $v;
     }
 
     public function zend_hash_find_ptr(CData $zendArrayPtr, CData $name, string $type)
