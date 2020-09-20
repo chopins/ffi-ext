@@ -459,7 +459,7 @@ class FFIExtend
     }
 
     public function getIntValue($v) {
-        if($this->isIntPtr($v)) {
+        if($this->isPtr($v)) {
             return $v[0];
         } elseif($this->isCData($v)) {
             return $v->cdata;
