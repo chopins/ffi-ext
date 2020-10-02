@@ -151,6 +151,29 @@ typedef enum _zend_ffi_symbol_kind {
 	ZEND_FFI_SYM_FUNC
 } zend_ffi_symbol_kind;
 
+typedef enum _zend_ffi_type_kind {
+        ZEND_FFI_TYPE_VOID,
+        ZEND_FFI_TYPE_FLOAT,
+        ZEND_FFI_TYPE_DOUBLE,
+        HAVE_LONG_DOUBLE_ZEND_FFI_TYPE_LONGDOUBLE,
+        ZEND_FFI_TYPE_UINT8,
+        ZEND_FFI_TYPE_SINT8,
+        ZEND_FFI_TYPE_UINT16,
+        ZEND_FFI_TYPE_SINT16,
+        ZEND_FFI_TYPE_UINT32,
+        ZEND_FFI_TYPE_SINT32,
+        ZEND_FFI_TYPE_UINT64,
+        ZEND_FFI_TYPE_SINT64,
+        ZEND_FFI_TYPE_ENUM,
+        ZEND_FFI_TYPE_BOOL,
+        ZEND_FFI_TYPE_CHAR,
+        ZEND_FFI_TYPE_POINTER,
+        ZEND_FFI_TYPE_FUNC,
+        ZEND_FFI_TYPE_ARRAY,
+        ZEND_FFI_TYPE_STRUCT,
+} zend_ffi_type_kind;
+
+
 struct _zend_ffi_type {
 	int     kind;
 	size_t                 size;

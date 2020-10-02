@@ -29,7 +29,7 @@ class ReflectionCFunction extends FFIExtend implements Reflector
         $this->ffi = $ffi;
         $this->name = $name;
         self::$preName = $name;
-        $sym = $this->findSymobl($ffi, $name, self::ZEND_FFI_SYM_FUNC);
+        $sym = $this->findSymobl($ffi, $name, $this->getffi()->ZEND_FFI_SYM_FUNC);
         if(!$this->isNull($sym)) {
             $this->type = $this->ZEND_FFI_TYPE($sym[0]->type)[0];
             return;
