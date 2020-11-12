@@ -133,7 +133,7 @@ class FFIExtend
         }
         $this->haveLongDouble();
 
-        $this->replaceMacro('HAVE_LONG_DOUBLE_ZEND_FFI_TYPE_LONGDOUBLE', self::$HAVE_LONG_DOUBLE, 'ZEND_FFI_TYPE_LONGDOUBLE', $code);
+        $this->replaceMacro('HAVE_LONG_DOUBLE_ZEND_FFI_TYPE_LONGDOUBLE', self::$HAVE_LONG_DOUBLE, 'ZEND_FFI_TYPE_LONGDOUBLE,', $code);
 
         if (strcasecmp(PHP_OS_FAMILY, 'Windows') === 0) {
             $this->replaceMacro('ZEND_FASTCALL', 1, '__vectorcall', $code);
