@@ -22,16 +22,31 @@ class CFFI
     private $lib = null;
     private $ffi = null;
     private $defines = [];
-    private $includes = [];
+
     public function __construct(string $code = '', ?string $lib = null)
     {
         $this->code = $code;
         $lib = $lib;
     }
 
+    public function getFFI(): FFI
+    {
+        return $this->ffi;
+    }
+
+    public function dll(string $lib)
+    {
+        $this->lib = $lib;
+    }
+
     public function include(string $file)
     {
-        $this->includes[] = $file;
+        $this->code .= file_get_contents($file);
+    }
+
+    public function code(string $code)
+    {
+        $this->code .= $code;
     }
 
     public function define(string $name, $value)
@@ -97,18 +112,16 @@ class CFFI
         return $v;
     }
 
-    private function mCdef(): CFFI
+    private function mCdef(?string $lib = null): CFFI
     {
-        foreach ($this->includes as $file) {
-            $this->code .= file_get_contents($file);
-        }
-
         $patterns = [];
         foreach ($this->defines as $name => $value) {
             $patterns["/([^A-Z0-9a-z_])$name([^A-Z0-9a-z_])/"] = fn ($m) => $m[1] . $value . $m[2];
         }
         $this->code = preg_replace_callback_array($patterns, $this->code);
-
+        if ($lib) {
+            $this->lib = $lib;
+        }
         $this->ffi = FFI::cdef($this->code, $this->lib);
         return $this;
     }

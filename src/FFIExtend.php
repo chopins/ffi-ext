@@ -6,11 +6,12 @@
  * @copyright  Copyright (c) 2020 Szopen Xiao (Toknot.com)
  * @license    http://toknot.com/LICENSE.txt New BSD License
  * @link       https://github.com/chopins/ffi-ext
- * @version    0.14
+ * @version    0.2
  */
 
 namespace Toknot;
 
+use Toknot\CFFI;
 use FFI;
 use FFI\CData;
 use FFI\CType;
@@ -75,18 +76,6 @@ class FFIExtend
         }
     }
 
-    public function is64() {
-        if(PHP_INT_SIZE === 8) {
-            return true;
-        } else {
-            $psize = FFI::sizeof(FFI::new('void *'));
-            if($psize === 8) {
-                return true;
-            }
-            return false;
-        }
-    }
-
     public function getffi()
     {
         return self::$ffi;
@@ -101,51 +90,28 @@ class FFIExtend
         }
     }
 
-    public function replaceMacro($name, $check, $value, &$code) {
-        if($check) {
-            $code = str_replace($name, $value, $code);
-        } else {
-            $code = str_replace($name, '', $code);
-        }
-    }
-
-    public function haveLongDouble() {
-        try {
-            if (FFI::sizeof(FFI::type('long double')) > 8) {
-                self::$HAVE_LONG_DOUBLE = true;
-            } else {
-                self::$HAVE_LONG_DOUBLE = false;
-            }
-        } catch (FFI\ParserException $e) {
-            self::$HAVE_LONG_DOUBLE = false;
-        }
-        return self::$HAVE_LONG_DOUBLE;
-    }
-
     private function initPhpApi()
     {
         $bitSize = PHP_INT_SIZE * 8;
-        $code = "typedef int{$bitSize}_t zend_long;typedef uint{$bitSize}_t zend_ulong;typedef int{$bitSize}_t zend_off_t;";
+        self::$ffi = new CFFI;
+        self::$ffi->typedef("int{$bitSize}_t", 'zend_long');
+        self::$ffi->typedef("uint{$bitSize}_t", 'zend_ulong');
+        self::$ffi->typedef("int{$bitSize}_t", 'zend_off_t');
 
-        $code .= file_get_contents(__DIR__ . '/php.h');
-        if(defined('PHP_FFI_EXTEND_APPEND_CDEF')) {
-            $code .= PHP_FFI_EXTEND_APPEND_CDEF;
+        self::$ffi->include(__DIR__ . '/php.h');
+        if (defined('PHP_FFI_EXTEND_APPEND_CDEF')) {
+            self::$ffi->code(PHP_FFI_EXTEND_APPEND_CDEF);
         }
-        $this->haveLongDouble();
-
-        $this->replaceMacro('HAVE_LONG_DOUBLE_ZEND_FFI_TYPE_LONGDOUBLE', self::$HAVE_LONG_DOUBLE, 'ZEND_FFI_TYPE_LONGDOUBLE,', $code);
+        self::$HAVE_LONG_DOUBLE = CFFI::haveLongDouble();
+        self::$ffi->ifDefine('HAVE_LONG_DOUBLE_ZEND_FFI_TYPE_LONGDOUBLE', self::$HAVE_LONG_DOUBLE, 'ZEND_FFI_TYPE_LONGDOUBLE');
 
         if (strcasecmp(PHP_OS_FAMILY, 'Windows') === 0) {
-            $this->replaceMacro('ZEND_FASTCALL', 1, '__vectorcall', $code);
+            self::$ffi->define('ZEND_FASTCALL', '__vectorcall');
             $phpDll = $this->findPhpDll();
-            self::$ffi = FFI::cdef($code, $phpDll);
+            self::$ffi = self::$ffi->cdef($phpDll);
         } else {
-            $this->replaceMacro('ZEND_FASTCALL', 1, '__attribute__((fastcall))', $code);
-            if (PHP_DLL_FILE_PATH) {
-                self::$ffi = FFI::cdef($code, PHP_DLL_FILE_PATH);
-            } else {
-                self::$ffi = FFI::cdef($code);
-            }
+            self::$ffi->define('ZEND_FASTCALL', '__attribute__((fastcall))');
+            self::$ffi->cdef(PHP_DLL_FILE_PATH);
         }
 
         $this->setZendffi();
@@ -233,16 +199,6 @@ class FFIExtend
         return $this->zvalValue($sym->arData->val);
     }
 
-    public function emalloc($size)
-    {
-        return self::$ffi->cast('void*', self::$ffi->new("char[$size]"), false);
-    }
-
-    public function sizeof($ffi, $type)
-    {
-        return FFI::sizeof($ffi->type($type));
-    }
-
     public function cast2Size(CData $data, $ffi = null)
     {
         $f = $ffi ?? self::$ffi;
@@ -266,7 +222,7 @@ class FFIExtend
 
     public function getCTypeName(CType $type)
     {
-        if(method_exists('FFI\CType', 'getName')) {
+        if (method_exists('FFI\CType', 'getName')) {
             return $type->getName();
         }
         $cdata = $this->zval($type);
@@ -292,7 +248,7 @@ class FFIExtend
 
     protected function getCTypeCDataName(FFI\CData $type)
     {
-        if(method_exists('FFI\CType', 'getName')) {
+        if (method_exists('FFI\CType', 'getName')) {
             return FFI::typeof($type)->getName();
         }
         $is_ptr = false;
@@ -334,7 +290,7 @@ class FFIExtend
                     $name = 'int64_t';
                     break;
                 case self::$ffi->ZEND_FFI_TYPE_ENUM:
-                    if (!$this->isNull($type[0]->enumeration->tag_name)) {
+                    if (!CFFI::isNull($type[0]->enumeration->tag_name)) {
                         $tagname = $type[0]->enumeration->tag_name;
                         $buf = $this->getZStr($tagname) . $buf;
                     } else {
@@ -377,7 +333,7 @@ class FFIExtend
                     break;
                 case self::$ffi->ZEND_FFI_TYPE_STRUCT:
                     if ($type[0]->attr & self::ZEND_FFI_ATTR_UNION) {
-                        if (!$this->isNull($type[0]->record->tag_name)) {
+                        if (!CFFI::isNull($type[0]->record->tag_name)) {
                             $tagname = $type[0]->record->tag_name;
                             $buf = $this->getZStr($tagname) . $buf;
                         } else {
@@ -385,7 +341,7 @@ class FFIExtend
                         }
                         $name = "union ";
                     } else {
-                        if (!$this->isNull($type[0]->record->tag_name)) {
+                        if (!CFFI::isNull($type[0]->record->tag_name)) {
                             $tagname = $type[0]->record->tag_name;
                             $buf = $this->getZStr($tagname) . $buf;
                         } else {
@@ -409,34 +365,19 @@ class FFIExtend
         return "$name{$buf}";
     }
 
-    public function newIntPtr(string $type = 'int', ?int $value = null) {
-        $int = self::$ffi->new($type, 0);
-        if($value !== null) {
-            $int->cdata = $value;
-        }
-        return FFI::addr($int);
-    }
-
-    public function isCData($v) {
-        return $v instanceof CData;
-    }
-
-    public function isNull($v)
+    public function isPtr($v)
     {
-        return $v === null || ($this->isCData($v) && FFI::isNull($v));
-    }
-
-    public function isPtr($v) {
-        if(!$this->isCData($v)) {
+        if (!CFFI::isCData($v)) {
             return false;
         }
         return (strpos($this->getCTypeCDataName($v), '*') >= 0);
     }
 
-    public function getIntValue($v) {
-        if($this->isPtr($v)) {
+    public function getIntValue($v)
+    {
+        if ($this->isPtr($v)) {
             return $v[0];
-        } elseif($this->isCData($v)) {
+        } elseif (CFFI::isCData($v)) {
             return $v->cdata;
         }
         return $v;
@@ -445,7 +386,7 @@ class FFIExtend
     public function zend_hash_find_ptr(CData $zendArrayPtr, CData $name, string $type)
     {
         $v = self::$ffi->zend_hash_find($zendArrayPtr, $name);
-        if ($this->isNull($v)) {
+        if (CFFI::isNull($v)) {
             return NULL;
         }
         $p = self::Z_PTR_P($v);
@@ -463,11 +404,11 @@ class FFIExtend
         $zendObj = $this->zval($ffi);
         $zendStr = $this->zval($symName);
         $zffi = self::$ffi->cast('zend_ffi*', $zendObj);
-        if ($this->isNull($zffi->symbols)) {
+        if (CFFI::isNull($zffi->symbols)) {
             return null;
         }
         $sym = $this->zend_hash_find_ptr($zffi->symbols, $zendStr, 'zend_ffi_symbol*');
-        if ($this->isNull($sym) || $sym[0]->kind !== $symType) {
+        if (CFFI::isNull($sym) || $sym[0]->kind !== $symType) {
             return null;
         }
         return $sym;
@@ -476,24 +417,25 @@ class FFIExtend
     public function hasCFunc(FFI $ffi, string $name)
     {
         $sym = $this->findSymobl($ffi, $name, self::$ffi->ZEND_FFI_SYM_FUNC);
-        return !$this->isNull($sym);
+        return !CFFI::isNull($sym);
     }
 
     public function hasCVariable(FFI $ffi, string $name)
     {
         $sym = $this->findSymobl($ffi, $name, self::$ffi->ZEND_FFI_SYM_VAR);
-        return !$this->isNull($sym);
+        return !CFFI::isNull($sym);
     }
 
-    public function hasCEnum(FFI $ffi, string $name) {
+    public function hasCEnum(FFI $ffi, string $name)
+    {
         $sym = $this->findSymobl($ffi, $name, self::$ffi->ZEND_FFI_SYM_CONST);
-        return !$this->isNull($sym);
+        return !CFFI::isNull($sym);
     }
 
     public function hasCType(FFI $ffi, string $type)
     {
         $sym = $this->findSymobl($ffi, $type, self::$ffi->ZEND_FFI_SYM_TYPE);
-        return !$this->isNull($sym);
+        return !CFFI::isNull($sym);
     }
 
     public static function Z_PTR_P(CData $zval)
@@ -532,58 +474,11 @@ class FFIExtend
                     continue;
                 }
             }
-            if (!$this->isNull($p->key)) {
+            if (!CFFI::isNull($p->key)) {
                 $callable($this->getZStr($p->key), $v);
             } else {
                 $callable($p->h, $v);
             }
         }
-    }
-
-    /**
-     * PHP array to C Data of char*[] type, PHP array to char**
-     *
-     * @param integer $argc   number of elements in given array
-     * @param array $argv   given array
-     * @return CData
-     */
-    public function argsPtr(int $argc, array $argv): CData
-    {
-        $p = self::$ffi->new("char *[$argc]", false);
-        foreach ($argv as $i => $arg) {
-            $p[$i] = $this->strToCharPtr($arg);
-        }
-        $a = FFI::addr($p);
-        return FFI::cast('char**', $a);
-    }
-
-    /**
-     * PHP string to C char* type
-     *
-     * @param string $string
-     * @return CData
-     */
-    public function strToCharPtr(string $string): CData
-    {
-        $charArr = $this->strToCharArr($string);
-        return FFI::cast('char*', FFI::addr($charArr));
-    }
-
-    /**
-     * PHP string to  C Data of char[] type, php string to C char[]
-     *
-     * @param string $string
-     * @return CData
-     */
-    public function strToCharArr(string $string): CData
-    {
-        $len = strlen($string);
-        $charArr = self::$ffi->new("char[$len]", false);
-        for ($i = 0; $i < $len; $i++) {
-            $char = self::$ffi->new('char', false);
-            $char->cdata = $string[$i];
-            $charArr[$i] = $char;
-        }
-        return $charArr;
     }
 }

@@ -15,7 +15,7 @@ use ReflectionException;
 use FFI;
 use Reflector;
 
-class ReflectionCFunction extends FFIExtend implements Reflector
+class ReflectionCFunction extends FFIExtend
 {
 
     private $name = '';
@@ -40,11 +40,6 @@ class ReflectionCFunction extends FFIExtend implements Reflector
     public function getName()
     {
         return $this->name;
-    }
-
-    public static function export()
-    {
-        return self::$preName;
     }
 
     public function getClosure()
@@ -89,11 +84,6 @@ class ReflectionCFunction extends FFIExtend implements Reflector
                 eval("\$c = function($args){return $this->ffi->{$this->name}($args)};");
                 return $c;
         }
-    }
-
-    public function __toString()
-    {
-        return "C Function {$this->name}";
     }
 
     public function isVariadic()
